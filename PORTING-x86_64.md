@@ -20,14 +20,15 @@ zstd-фрейме, и его вскрывает обычная связка `zst
 2. **Один статический линк** — программа `zstd` (PIE @ 0x08000000, `link.ld`,
    интерпретатор `/lib/ld.so`), собранная из `lib/*` и `programs/*` против
    CactLibc.  `start.o`/`clibc.so` берутся из `-Dcactlib`.
-3. **Однопоточная сборка.** `ZSTD_MULTITHREAD` не включается: async-слой
-   (`fileio_asyncio.c`) компилируется и даёт синхронный фолбэк, а `-T`
-   (воркеры) — отдельный шаг.  Всё остальное (сжатие, распаковка, `-l`,
-   `--train`, бенч `-b`, legacy v0.5+) включено.
+3. **Многопоточная сборка.** `ZSTD_MULTITHREAD` включается: pthreads CactLibc
+   поддерживают `threading.c`, пул воркеров и `fileio_asyncio.c`, так что `-T#`
+   работает.  Всё остальное (сжатие, распаковка, `-l`, `--train`, бенч `-b`,
+   legacy v0.5+) тоже включено.
 4. **Ничего в upstream-исходниках не правится.**  Различия окружения
    выражаются флагами: `-D__CACT__`, `-DPLATFORM_POSIX_VERSION=200809L`
    (иначе `programs/platform.h` не находит `_POSIX_VERSION` и выключает
-   POSIX-пути), `-DZSTD_LEGACY_SUPPORT=5`, `-DZSTD_DISABLE_ASM`.
+   POSIX-пути), `-DZSTD_LEGACY_SUPPORT=5`, `-DZSTD_MULTITHREAD`,
+   `-DZSTD_DISABLE_ASM`.
 
 ## Этапы
 
@@ -49,8 +50,6 @@ zstd-фрейме, и его вскрывает обычная связка `zst
 
 ## Открытые вопросы
 
-- **Многопоточность (`-T#`)** — отдельный шаг: pthreads CactLibc уже держат
-  `threading.c`; включается флагом `ZSTD_MULTITHREAD` без правок upstream.
 - **asm-распаковка (BMI2)** — выключена (`-DZSTD_DISABLE_ASM`).  Сам
   `huf_decompress_amd64.S` clang'ом ассемблируется (проверено), но zstd включает
   asm только под `__linux__`/`__APPLE__`/Windows (`portability_macros.h`), а

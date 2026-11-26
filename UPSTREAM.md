@@ -22,9 +22,9 @@ Nothing upstream is edited.  What the `cact` branch adds on top of `v1.5.7`:
 
 `lib/` and `programs/` are untouched: every environment difference lives in
 `meson.build`'s `zstd_c_args` (`-D__CACT__`, `-DPLATFORM_POSIX_VERSION=200809L`,
-`-DZSTD_LEGACY_SUPPORT=5`, `-DZSTD_DISABLE_ASM`) and in the object lists there.
-The kernel tree vendors the *same* release (`1.5.7`) under
-`CactKernel-x86_64/Cact/drivers/zstd`, so the in-kernel and userspace
+`-DZSTD_LEGACY_SUPPORT=5`, `-DZSTD_MULTITHREAD`, `-DZSTD_DISABLE_ASM`) and in
+the object lists there.  The kernel tree vendors the *same* release (`1.5.7`)
+under `CactKernel-x86_64/Cact/drivers/zstd`, so the in-kernel and userspace
 decompressors stay in step.
 
 ## Sync

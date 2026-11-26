@@ -44,13 +44,13 @@ Override paths if needed:
 meson configure build-meson -Dcactlib=/path/to/CactLibc-x86_64
 ```
 
-The CLI is built **single-threaded** (no `-DZSTD_MULTITHREAD`): CactOS has
-pthreads, but the async-I/O layer is a separate port step.  Compression,
-decompression, `-l`, `--train`, the bench (`-b`), the legacy (v0.5+) decoders
-and the trace hook are all compiled in.  The amd64 BMI2 assembly is left out
-(see `meson.build`): zstd gates it on `__linux__`/`__APPLE__`/Windows, and
-advertising `__linux__` to the whole front end would change unrelated platform
-behaviour for a decompress-only speedup.
+The CLI is built **multithreaded** (`-DZSTD_MULTITHREAD`): CactLibc's pthreads
+back `threading.c`, the thread pool and `fileio_asyncio.c`, so `-T#` works.
+Compression, decompression, `-l`, `--train`, the bench (`-b`), the legacy
+(v0.5+) decoders and the trace hook are all compiled in.  The amd64 BMI2
+assembly is left out (see `meson.build`): zstd gates it on
+`__linux__`/`__APPLE__`/Windows, and advertising `__linux__` to the whole front
+end would change unrelated platform behaviour for a decompress-only speedup.
 
 ## 🗂️ Layout
 

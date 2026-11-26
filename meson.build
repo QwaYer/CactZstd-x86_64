@@ -5,9 +5,9 @@
 # CactZstd-x86_64 — the zstd command-line tool (and library) for CactOS
 # ==============================================================================
 #
-# The upstream zstd tree (lib/ + programs/, see UPSTREAM.md) is carried
-# verbatim; this build is the Cact addition.  It compiles the library objects
-# and the command-line front end against CactLibc and links one PIE:
+# The tree in the root is upstream zstd (a fork of meta/zstd, see UPSTREAM.md);
+# this build is the Cact addition.  It compiles the library objects and the
+# command-line front end against CactLibc and links one PIE:
 #
 #   build-meson/zstd      the CLI (fixed base 0x08000000, link.ld)
 #
@@ -15,10 +15,10 @@
 #   ninja -C build-meson            # build-meson/zstd
 #   ninja -C build-meson stage      # zstd into -Dlr_bin (/usr/bin)
 #
-# The CLI is built single-threaded (no ZSTD_MULTITHREAD): CactOS has pthreads,
-# but the async-I/O layer is a separate port step, and every other upstream
-# feature — compression, decompression, listing, --train, the bench and the
-# legacy (v0.5+) decoders — is compiled in.
+# The CLI is built multithreaded (-DZSTD_MULTITHREAD): CactLibc's pthreads back
+# threading.c, the thread pool and fileio_asyncio.c, so -T# works.  Every other
+# upstream feature — compression, decompression, listing, --train, the bench and
+# the legacy (v0.5+) decoders — is compiled in.
 # ==============================================================================
 
 project('cact-zstd', 'c',
@@ -63,11 +63,16 @@ add_project_arguments(['-fPIE', '-ffunction-sections', '-fdata-sections'],
 #                             value turns on the POSIX code paths (file lists,
 #                             console detection, signal handling) verbatim.
 #   -DZSTD_LEGACY_SUPPORT=5   the upstream default: decode legacy (v0.5+) frames
-#   -DZSTD_DISABLE_ASM        skip the amd64 BMI2 assembly (a plain C build)
+#   -DZSTD_MULTITHREAD        worker threads (-T#): CactLibc's pthreads back
+#                             threading.c, the thread pool and fileio_asyncio.c
+#   -DZSTD_DISABLE_ASM        keep the amd64 BMI2 assembly out: zstd gates it on
+#                             __linux__/__APPLE__/Windows (portability_macros.h),
+#                             so enabling it would mean advertising __linux__ to
+#                             the whole front end for a decompress-only speedup
 zstd_c_args = [
   '-ffreestanding', '-fno-stack-protector', '-nostdlib', '-nostdlibinc',
   '-D__CACT__', '-DPLATFORM_POSIX_VERSION=200809L',
-  '-DZSTD_LEGACY_SUPPORT=5', '-DZSTD_DISABLE_ASM',
+  '-DZSTD_LEGACY_SUPPORT=5', '-DZSTD_MULTITHREAD', '-DZSTD_DISABLE_ASM',
   '-w',
   '-I' + (src_root / 'lib'),
   '-isystem', cactlib_inc,
@@ -114,8 +119,7 @@ zstd_lib = static_library('cact-zstd-lib',
   c_args: zstd_c_args)
 
 # The front end: the upstream default `zstd` program's objects.  fileio_asyncio.c
-# is the async-I/O pool layer: with ZSTD_MULTITHREAD off it still compiles and
-# supplies the synchronous fallbacks the front end links against.
+# is the async-I/O pool layer, built here against CactLibc's pthreads.
 zstd_prog = static_library('cact-zstd-prog',
   files(
     'programs/benchfn.c',
