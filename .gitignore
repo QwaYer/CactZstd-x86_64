@@ -61,3 +61,7 @@ compile_commands.json
 .clangd
 perf.data
 perf.data.old
+
+# CactOS port: the Meson build tree (see meson.build).  Upstream's `build-*`
+# already matches it; the port spells it out so the intent is explicit.
+/build-meson/
